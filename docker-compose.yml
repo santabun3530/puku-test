@@ -1,0 +1,288 @@
+services:
+  database:
+    image: postgres:13
+    container_name: ${POSTGRES_CONTAINER_NAME:-database}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-recipe_db}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-recipe_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  user-service:
+    build: ./user-service
+    container_name: ${USER_SERVICE_CONTAINER_NAME:-user-service}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://admin:password@database:5432/recipe_db}
+      SECRET_KEY: ${SECRET_KEY:-de6b19b222}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      USER_SERVICE_HOST: ${USER_SERVICE_HOST:-0.0.0.0}
+      USER_SERVICE_PORT: ${USER_SERVICE_PORT:-8001}
+    ports:
+      - "${USER_SERVICE_PORT:-8001}:${USER_SERVICE_PORT:-8001}"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  recipe-service:
+    build: ./recipe-service
+    container_name: ${RECIPE_SERVICE_CONTAINER_NAME:-recipe-service}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://admin:password@database:5432/recipe_db}
+      SECRET_KEY: ${SECRET_KEY:-de6b19b222}  # ✅ ADD THIS
+      ALGORITHM: ${ALGORITHM:-HS256}         # ✅ ADD THIS
+      USER_SERVICE_URL: http://user-service:8001  # ✅ ADD THIS
+      RECIPE_SERVICE_HOST: ${RECIPE_SERVICE_HOST:-0.0.0.0}
+      RECIPE_SERVICE_PORT: ${RECIPE_SERVICE_PORT:-8002}
+    ports:
+      - "${RECIPE_SERVICE_PORT:-8002}:${RECIPE_SERVICE_PORT:-8002}"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  rating-service:
+    build: ./rating-service
+    container_name: ${RATING_SERVICE_CONTAINER_NAME:-rating-service}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://admin:password@database:5432/recipe_db}
+      SECRET_KEY: ${SECRET_KEY:-de6b19b222}  # ✅ ADD THIS
+      ALGORITHM: ${ALGORITHM:-HS256}         # ✅ ADD THIS
+      USER_SERVICE_URL: http://user-service:8001  # ✅ ADD THIS
+      RECIPE_SERVICE_URL: http://recipe-service:8002  # ✅ ADD THIS
+      RATING_SERVICE_HOST: ${RATING_SERVICE_HOST:-0.0.0.0}
+      RATING_SERVICE_PORT: ${RATING_SERVICE_PORT:-8003}
+    ports:
+      - "${RATING_SERVICE_PORT:-8003}:${RATING_SERVICE_PORT:-8003}"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: ${FRONTEND_CONTAINER_NAME:-frontend}
+    environment:
+      PORT: ${FRONTEND_PORT:-3000}
+      REACT_APP_API_URL: ${EXTERNAL_USER_SERVICE_URL:-http://localhost:8001}
+      REACT_APP_RECIPE_SERVICE_URL: ${EXTERNAL_RECIPE_SERVICE_URL:-http://localhost:8002}
+      REACT_APP_RATING_SERVICE_URL: ${EXTERNAL_RATING_SERVICE_URL:-http://localhost:8003}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+    depends_on:
+      - user-service
+      - recipe-service
+      - rating-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+
+
+
+
+
+
+
+
+# services:
+#   database:
+#     image: postgres:13
+#     container_name: database
+#     environment:
+#       POSTGRES_DB: recipe_db
+#       POSTGRES_USER: admin
+#       POSTGRES_PASSWORD: password
+#     ports:
+#       - "5432:5432"  # ✅ Add this to access database from host
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data  # ✅ Use named volume
+#       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+#     networks:
+#       - app-network
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U admin -d recipe_db"]  # ✅ Fixed username
+#       interval: 5s
+#       timeout: 5s
+#       retries: 10
+
+#   user-service:
+#     build: ./user-service
+#     container_name: user-service
+#     environment:
+#       DATABASE_URL: postgresql://admin:password@database:5432/recipe_db
+#     depends_on:
+#       database:
+#         condition: service_healthy
+#     networks:
+#       - app-network
+
+#   recipe-service:
+#     build: ./recipe-service
+#     container_name: recipe-service
+#     environment:
+#       DATABASE_URL: postgresql://admin:password@database:5432/recipe_db
+#     depends_on:
+#       database:
+#         condition: service_healthy
+#     networks:
+#       - app-network
+
+#   rating-service:
+#     build: ./rating-service
+#     container_name: rating-service
+#     environment:
+#       DATABASE_URL: postgresql://admin:password@database:5432/recipe_db
+#     depends_on:
+#       database:
+#         condition: service_healthy
+#     networks:
+#       - app-network
+
+# networks:
+#   app-network:
+#     driver: bridge
+
+# volumes:
+#   postgres_data:  # ✅ Add this named volume definition
+
+
+
+# version: '3.8'
+
+# services:
+#   # PostgreSQL Database
+#   database:
+#     image: postgres:15
+#     container_name: ${POSTGRES_CONTAINER_NAME}
+#     environment:
+#       POSTGRES_DB: ${POSTGRES_DB}
+#       POSTGRES_USER: ${POSTGRES_USER}
+#       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#     ports:
+#       - "${POSTGRES_PORT:-5432}:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+#     networks:
+#       - myapp_network
+#     restart: unless-stopped
+
+#   # User Service
+#   user-service:
+#     build: ./user-service
+#     container_name: ${USER_SERVICE_CONTAINER_NAME}
+#     environment:
+#       PORT: ${USER_SERVICE_PORT}
+#       HOST: ${USER_SERVICE_HOST}
+#       DATABASE_URL: ${DATABASE_URL}
+#       SECRET_KEY: ${SECRET_KEY}
+#       ALGORITHM: ${ALGORITHM}
+#       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+#       USER_SERVICE_URL: ${USER_SERVICE_URL}
+#     ports:
+#       - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+#     depends_on:
+#       - database
+#     networks:
+#       - myapp_network
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+
+#   # Recipe Service
+#   recipe-service:
+#     build: ./recipe-service
+#     container_name: ${RECIPE_SERVICE_CONTAINER_NAME}
+#     environment:
+#       PORT: ${RECIPE_SERVICE_PORT}
+#       HOST: ${RECIPE_SERVICE_HOST}
+#       DATABASE_URL: ${DATABASE_URL}
+#       USER_SERVICE_URL: ${USER_SERVICE_URL}
+#       RECIPE_SERVICE_URL: ${RECIPE_SERVICE_URL}
+#     ports:
+#       - "${RECIPE_SERVICE_PORT}:${RECIPE_SERVICE_PORT}"
+#     depends_on:
+#       - database
+#       - user-service
+#     networks:
+#       - myapp_network
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+
+#   # Rating Service
+#   rating-service:
+#     build: ./rating-service
+#     container_name: ${RATING_SERVICE_CONTAINER_NAME}
+#     environment:
+#       PORT: ${RATING_SERVICE_PORT}
+#       HOST: ${RATING_SERVICE_HOST}
+#       DATABASE_URL: ${DATABASE_URL}
+#       USER_SERVICE_URL: ${USER_SERVICE_URL}
+#       RECIPE_SERVICE_URL: ${RECIPE_SERVICE_URL}
+#       RATING_SERVICE_URL: ${RATING_SERVICE_URL}
+#     ports:
+#       - "${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}"
+#     depends_on:
+#       - database
+#       - user-service
+#       - recipe-service
+#     networks:
+#       - myapp_network
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+
+#   # Frontend
+#   frontend:
+#     build: ./frontend
+#     container_name: ${FRONTEND_CONTAINER_NAME}
+#     environment:
+#       PORT: ${FRONTEND_PORT}
+#       REACT_APP_API_URL: ${EXTERNAL_USER_SERVICE_URL}
+#       REACT_APP_RECIPE_SERVICE_URL: ${EXTERNAL_RECIPE_SERVICE_URL}
+#       REACT_APP_RATING_SERVICE_URL: ${EXTERNAL_RATING_SERVICE_URL}
+#       NODE_ENV: ${NODE_ENV}
+#     ports:
+#       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+#     depends_on:
+#       - user-service
+#       - recipe-service
+#       - rating-service
+#     networks:
+#       - myapp_network
+#     restart: unless-stopped
+#     env_file:
+#       - .env
+
+# volumes:
+#   postgres_data:
+
+# networks:
+#   myapp_network:
+#     driver: bridge

@@ -1,0 +1,302 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_HUB_REPO = "nanil0034/kindergarten-registry"
+        SSH_CREDENTIALS = 'vm-ssh-key'
+        REMOTE_SERVER_IP = '192.168.121.188'
+        GITOPS_REPO = "https://github.com/Nabil720/Linux_Docker_k8s_Deployment.git"
+        GITOPS_REPO_PATH = "kindergarten-registry_GitOps"
+        K8S_SOURCE_PATH = "kindergarten-registry_k8s"
+        GIT_BRANCH = "main"
+
+        // Use the exact SonarQube **Name** as configured in Jenkins (Manage Jenkins -> Configure System -> SonarQube servers)
+        SONARQUBE_ENV = "Sonar"   // <- change this if your SonarQube name is different
+    }
+
+    stages {
+        stage('Git pull') {
+            steps {
+                echo "========Code Cloning========"
+                git url: 'https://github.com/Nabil720/Linux_Docker_k8s_Deployment.git', branch: "${GIT_BRANCH}"
+                echo "Code cloning Successful"
+                echo "Working dir: ${pwd()}"
+                sh "ls -la"
+            }
+        }
+
+
+    
+        /* ---------------------- Build Multiple Docker Images ---------------------- */
+
+        stage('Build Student Service Docker Image') {
+            steps {
+                echo "========Building Student Service Docker Image========"
+                sh """
+                    cd ${K8S_SOURCE_PATH}/studentservice
+                    docker build -t ${DOCKER_HUB_REPO}-student:${BUILD_NUMBER} .
+                """
+            }
+        }
+
+        stage('Build Teacher Service Docker Image') {
+            steps {
+                echo "========Building Teacher Service Docker Image========"
+                sh """
+                    cd ${K8S_SOURCE_PATH}/teacherservice
+                    docker build -t ${DOCKER_HUB_REPO}-teacher:${BUILD_NUMBER} .
+                """
+            }
+        }
+
+        stage('Build Employee Service Docker Image') {
+            steps {
+                echo "========Building Employee Service Docker Image========"
+                sh """
+                    cd ${K8S_SOURCE_PATH}/employeeservice
+                    docker build -t ${DOCKER_HUB_REPO}-employee:${BUILD_NUMBER} .
+                """
+            }
+        }
+
+        stage('Build Frontend Docker Image') {
+            steps {
+                echo "========Building Frontend Docker Image========"
+                sh """
+                    cd ${K8S_SOURCE_PATH}/frontend
+                    docker build -t ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} .
+                """
+            }
+        }
+
+        stage('Login to Docker Hub & Push Images') {
+            steps {
+                echo "========Pushing Docker Images to Docker Hub========"
+                withCredentials([usernamePassword(credentialsId: 'dockerHubCred', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh """
+                    echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                    docker push ${DOCKER_HUB_REPO}-student:${BUILD_NUMBER}
+                    docker push ${DOCKER_HUB_REPO}-teacher:${BUILD_NUMBER}
+                    docker push ${DOCKER_HUB_REPO}-employee:${BUILD_NUMBER}
+                    docker push ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER}
+                    """
+                }
+            }
+        }
+
+    }
+
+    post {
+        always {
+            echo "Pipeline finished. Collecting artifacts if any."
+            sh "docker logout"
+        }
+        success {
+            echo "Pipeline completed successfully."
+        }
+        failure {
+            echo "Pipeline failed. Check logs."
+        }
+    }
+}
+
+
+
+
+
+
+
+pipeline {
+    agent any
+    environment {
+        HARBOR_URL = "192.168.169.66"
+        HARBOR_USER = "vagrant"
+        HARBOR_PASS = "vagrant"
+        HARBOR_IMAGE_TAG = "${HARBOR_URL}/ft-k8s-dev/usb-ai-assistant-backend:$BUILD_NUMBER"
+        SSH_CREDENTIALS = 'puku-app'
+        REMOTE_SERVER_IP = '192.168.61.68'
+    }
+    stages {
+        stage('Git pull') {
+            steps {
+                checkout scmGit(
+                    branches: [[name: '*/development']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'santabun3530',
+                        url: 'git@github.com:santabun3530/puku-app.git'
+                    ]]
+                )
+            }
+        }
+        stage('Build docker image') {
+            steps {
+                sh "cp -a /opt/k8s/A-usb-ai-assistant-backend/.env ."
+                sh "DOCKER_BUILDKIT=1 docker build -t ${HARBOR_IMAGE_TAG} ."
+            }
+        }
+        stage('Login to Harbor') {
+            steps {
+                sh """
+                    echo ${HARBOR_PASS} | docker login ${HARBOR_URL} --username ${HARBOR_USER} --password-stdin
+                """
+            }
+        }
+        stage('Push image to Harbor') {
+            steps {
+                sh "docker push ${HARBOR_IMAGE_TAG}"
+            }
+        }
+        stage('git pull and deploy') {
+            steps {  
+                sshagent(credentials: [SSH_CREDENTIALS]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no root@192.168.61.68 '
+                            set -e
+                            cd /home/USB.AI-Assistant
+                            docker-compose down -v
+                            cp docker-compose.template.yml docker-compose.yml
+                            sed -i "s|image_tag|${BUILD_NUMBER}|g" docker-compose.yml
+                            docker-compose up -d
+                            docker images --format "{{.Repository}}:{{.Tag}}" | grep "usb-ai-assistant-backend" | grep -v "$HARBOR_IMAGE_TAG" | xargs -r docker rmi || true
+                        '
+                    """
+                }
+            }
+        }
+    }
+    
+}
+
+
+
+
+
+
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_HUB_REPO = "satabun3530/puku-app"
+        DOCKER_CREDENTIAL = 'jenkins-puku'
+        GIT_SOURCE = "git@github.com:santabun3530/puku-app.git"
+        GIT_BRANCH = "main"
+    }
+
+    stages {
+        stage('Git Clone') {
+            steps {
+                echo "========Cloning Repository========"
+                checkout scmGit(
+                    branches: [[name: "*/${GIT_BRANCH}"]],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'santabun3530',
+                        url: "${GIT_SOURCE}"
+                    ]]
+                )
+                sh "ls -la"
+            }
+        }
+
+        stage('Build User Service') {
+            steps {
+                echo "========Building User Service========"
+                sh """
+                    cd user-service
+                    docker build -t ${DOCKER_HUB_REPO}-user:${BUILD_NUMBER} .
+                    docker tag ${DOCKER_HUB_REPO}-user:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-user:latest
+                """
+            }
+        }
+
+        stage('Build Recipe Service') {
+            steps {
+                echo "========Building Recipe Service========"
+                sh """
+                    cd recipe-service
+                    docker build -t ${DOCKER_HUB_REPO}-recipe:${BUILD_NUMBER} .
+                    docker tag ${DOCKER_HUB_REPO}-recipe:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-recipe:latest
+                """
+            }
+        }
+
+        stage('Build Rating Service') {
+            steps {
+                echo "========Building Rating Service========"
+                sh """
+                    cd rating-service
+                    docker build -t ${DOCKER_HUB_REPO}-rating:${BUILD_NUMBER} .
+                    docker tag ${DOCKER_HUB_REPO}-rating:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-rating:latest
+                """
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                echo "========Building Frontend========"
+                sh """
+                    cd frontend
+                    docker build -t ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} .
+                    docker tag ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-frontend:latest
+                """
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                echo "========Pushing Images to Docker Hub========"
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_CREDENTIAL}",
+                    passwordVariable: 'DOCKER_PASS',
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    sh """
+                        echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                        
+                        docker push ${DOCKER_HUB_REPO}-user:${BUILD_NUMBER}
+                        docker push ${DOCKER_HUB_REPO}-user:latest
+                        
+                        docker push ${DOCKER_HUB_REPO}-recipe:${BUILD_NUMBER}
+                        docker push ${DOCKER_HUB_REPO}-recipe:latest
+                        
+                        docker push ${DOCKER_HUB_REPO}-rating:${BUILD_NUMBER}
+                        docker push ${DOCKER_HUB_REPO}-rating:latest
+                        
+                        docker push ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER}
+                        docker push ${DOCKER_HUB_REPO}-frontend:latest
+                    """
+                }
+            }
+        }
+
+        stage('Clean Local Images') {
+            steps {
+                echo "========Cleaning Local Images========"
+                sh """
+                    docker rmi ${DOCKER_HUB_REPO}-user:${BUILD_NUMBER} || true
+                    docker rmi ${DOCKER_HUB_REPO}-recipe:${BUILD_NUMBER} || true
+                    docker rmi ${DOCKER_HUB_REPO}-rating:${BUILD_NUMBER} || true
+                    docker rmi ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} || true
+                """
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "========Pipeline Finished========"
+            sh "docker logout || true"
+        }
+        success {
+            echo "✅ Pipeline completed successfully!"
+            echo "Images pushed:"
+            echo "  - ${DOCKER_HUB_REPO}-user:${BUILD_NUMBER}"
+            echo "  - ${DOCKER_HUB_REPO}-recipe:${BUILD_NUMBER}"
+            echo "  - ${DOCKER_HUB_REPO}-rating:${BUILD_NUMBER}"
+            echo "  - ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER}"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs above."
+        }
+    }
+}
