@@ -1,23 +1,10 @@
 import axios from 'axios';
 
-// // // All requests go through Ingress
-// const API_BASE_URL = "/api/users";
-// const RECIPE_BASE_URL = "/api/recipes";
-// const RATING_BASE_URL = "/api/ratings";
-// const API_BASE_URL = "/users";
-// const RECIPE_BASE_URL = "/recipes";
-// const RATING_BASE_URL = "/ratings";
-
-
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8001";
 const RECIPE_BASE_URL = process.env.REACT_APP_RECIPE_SERVICE_URL || "http://localhost:8002";
 const RATING_BASE_URL = process.env.REACT_APP_RATING_SERVICE_URL || "http://localhost:8003";
 
-
-
-
-// User/Auth API -----------------------------
-
+// User/Auth API
 const api = axios.create({
   baseURL: API_BASE_URL
 });
@@ -35,72 +22,58 @@ export const authService = {
     const formData = new FormData();
     formData.append("username", username);
     formData.append("password", password);
-
     const response = await api.post("/token", formData);
     return response.data;
   },
-
   register: async (userData) => {
     const response = await api.post("/register", userData);
     return response.data;
   },
-
   getCurrentUser: async () => {
     const response = await api.get("/users/me");
     return response.data;
   }
 };
 
-
-// Recipe API --------------------------------
-
+// Recipe API
 export const recipeService = {
-
   getRecipes: async () => {
-    const res = await axios.get(`${RECIPE_BASE_URL}`);
+    const res = await axios.get(`${RECIPE_BASE_URL}/recipes`);  // ✅ /recipes added
     return res.data;
   },
-
   getRecipe: async (id) => {
-    const res = await axios.get(`${RECIPE_BASE_URL}/${id}`);
+    const res = await axios.get(`${RECIPE_BASE_URL}/recipes/${id}`);  // ✅ /recipes added
     return res.data;
   },
-
   createRecipe: async (recipeData) => {
     const token = localStorage.getItem("token");
-    const res = await axios.post(`${RECIPE_BASE_URL}`, recipeData, {
+    const res = await axios.post(`${RECIPE_BASE_URL}/recipes`, recipeData, {  // ✅ /recipes added
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
   },
-
   updateRecipe: async (id, recipeData) => {
     const token = localStorage.getItem("token");
-    const res = await axios.put(`${RECIPE_BASE_URL}/${id}`, recipeData, {
+    const res = await axios.put(`${RECIPE_BASE_URL}/recipes/${id}`, recipeData, {  // ✅ /recipes added
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
   },
-
   deleteRecipe: async (id) => {
     const token = localStorage.getItem("token");
-    const res = await axios.delete(`${RECIPE_BASE_URL}/${id}`, {
+    const res = await axios.delete(`${RECIPE_BASE_URL}/recipes/${id}`, {  // ✅ /recipes added
       headers: { Authorization: `Bearer ${token}` }
     });
     return res.data;
   }
 };
 
-
-// Rating API --------------------------------
-
+// Rating API
 export const ratingService = {
-
   getRecipeRatings: async (recipeId) => {
     const res = await axios.get(`${RATING_BASE_URL}/recipes/${recipeId}/ratings`);
     return res.data;
   },
-
   createRating: async (ratingData) => {
     const token = localStorage.getItem("token");
     const res = await axios.post(`${RATING_BASE_URL}/ratings`, ratingData, {
@@ -108,7 +81,6 @@ export const ratingService = {
     });
     return res.data;
   },
-
   updateRating: async (id, ratingData) => {
     const token = localStorage.getItem("token");
     const res = await axios.put(`${RATING_BASE_URL}/ratings/${id}`, ratingData, {
@@ -116,7 +88,6 @@ export const ratingService = {
     });
     return res.data;
   },
-
   deleteRating: async (id) => {
     const token = localStorage.getItem("token");
     const res = await axios.delete(`${RATING_BASE_URL}/ratings/${id}`, {
@@ -125,3 +96,136 @@ export const ratingService = {
     return res.data;
   }
 };
+
+
+
+
+
+
+// import axios from 'axios';
+
+// // // // All requests go through Ingress
+// // const API_BASE_URL = "/api/users";
+// // const RECIPE_BASE_URL = "/api/recipes";
+// // const RATING_BASE_URL = "/api/ratings";
+// // const API_BASE_URL = "/users";
+// // const RECIPE_BASE_URL = "/recipes";
+// // const RATING_BASE_URL = "/ratings";
+
+
+// const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8001";
+// const RECIPE_BASE_URL = process.env.REACT_APP_RECIPE_SERVICE_URL || "http://localhost:8002";
+// const RATING_BASE_URL = process.env.REACT_APP_RATING_SERVICE_URL || "http://localhost:8003";
+
+
+
+
+// // User/Auth API -----------------------------
+
+// const api = axios.create({
+//   baseURL: API_BASE_URL
+// });
+
+// api.interceptors.request.use((config) => {
+//   const token = localStorage.getItem("token");
+//   if (token) {
+//     config.headers.Authorization = `Bearer ${token}`;
+//   }
+//   return config;
+// });
+
+// export const authService = {
+//   login: async (username, password) => {
+//     const formData = new FormData();
+//     formData.append("username", username);
+//     formData.append("password", password);
+
+//     const response = await api.post("/token", formData);
+//     return response.data;
+//   },
+
+//   register: async (userData) => {
+//     const response = await api.post("/register", userData);
+//     return response.data;
+//   },
+
+//   getCurrentUser: async () => {
+//     const response = await api.get("/users/me");
+//     return response.data;
+//   }
+// };
+
+
+// // Recipe API --------------------------------
+
+// export const recipeService = {
+
+//   getRecipes: async () => {
+//     const res = await axios.get(`${RECIPE_BASE_URL}`);
+//     return res.data;
+//   },
+
+//   getRecipe: async (id) => {
+//     const res = await axios.get(`${RECIPE_BASE_URL}/${id}`);
+//     return res.data;
+//   },
+
+//   createRecipe: async (recipeData) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.post(`${RECIPE_BASE_URL}`, recipeData, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   },
+
+//   updateRecipe: async (id, recipeData) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.put(`${RECIPE_BASE_URL}/${id}`, recipeData, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   },
+
+//   deleteRecipe: async (id) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.delete(`${RECIPE_BASE_URL}/${id}`, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   }
+// };
+
+
+// // Rating API --------------------------------
+
+// export const ratingService = {
+
+//   getRecipeRatings: async (recipeId) => {
+//     const res = await axios.get(`${RATING_BASE_URL}/recipes/${recipeId}/ratings`);
+//     return res.data;
+//   },
+
+//   createRating: async (ratingData) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.post(`${RATING_BASE_URL}/ratings`, ratingData, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   },
+
+//   updateRating: async (id, ratingData) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.put(`${RATING_BASE_URL}/ratings/${id}`, ratingData, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   },
+
+//   deleteRating: async (id) => {
+//     const token = localStorage.getItem("token");
+//     const res = await axios.delete(`${RATING_BASE_URL}/ratings/${id}`, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+//     return res.data;
+//   }
+// };
