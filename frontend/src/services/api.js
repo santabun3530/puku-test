@@ -4,9 +4,14 @@ import axios from 'axios';
 // const API_BASE_URL = "/api/users";
 // const RECIPE_BASE_URL = "/api/recipes";
 // const RATING_BASE_URL = "/api/ratings";
-const API_BASE_URL = "/users";
-const RECIPE_BASE_URL = "/recipes";
-const RATING_BASE_URL = "/ratings";
+// const API_BASE_URL = "/users";
+// const RECIPE_BASE_URL = "/recipes";
+// const RATING_BASE_URL = "/ratings";
+
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8001";
+const RECIPE_BASE_URL = process.env.REACT_APP_RECIPE_SERVICE_URL || "http://localhost:8002";
+const RATING_BASE_URL = process.env.REACT_APP_RATING_SERVICE_URL || "http://localhost:8003";
 
 
 
