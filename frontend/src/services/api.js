@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-// // All requests go through Ingress
-const API_BASE_URL = "/api/users";
-const RECIPE_BASE_URL = "/api/recipes";
-const RATING_BASE_URL = "/api/ratings";
-// const API_BASE_URL = "/users";
-// const RECIPE_BASE_URL = "/recipes";
-// const RATING_BASE_URL = "/ratings";
+// // // All requests go through Ingress
+// const API_BASE_URL = "/api/users";
+// const RECIPE_BASE_URL = "/api/recipes";
+// const RATING_BASE_URL = "/api/ratings";
+const API_BASE_URL = "/users";
+const RECIPE_BASE_URL = "/recipes";
+const RATING_BASE_URL = "/ratings";
 
 
 
