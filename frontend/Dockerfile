@@ -1,12 +1,16 @@
-# FROM node:18-alpine
-# WORKDIR /app
-# COPY package*.json ./
-# RUN npm install
-# COPY . .
-# RUN npm run build
-# RUN npm install -g serve
-# EXPOSE 80
-# CMD ["serve", "-s", "build", "-l", "80"]
+FROM node:18-alpine
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+RUN npm install -g serve
+EXPOSE 80
+CMD ["serve", "-s", "build", "-l", "80"]
+
 
 
 
@@ -17,25 +21,25 @@
 
 #with out ingress routing
 #++++++++++++++++++++++++++++++++++++++++
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
+# FROM node:18-alpine
+# WORKDIR /app
+# COPY package*.json ./
+# RUN npm install
+# COPY . .
 
-ARG REACT_APP_API_URL
-ARG REACT_APP_RECIPE_SERVICE_URL
-ARG REACT_APP_RATING_SERVICE_URL
+# ARG REACT_APP_API_URL
+# ARG REACT_APP_RECIPE_SERVICE_URL
+# ARG REACT_APP_RATING_SERVICE_URL
 
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
-ENV REACT_APP_RECIPE_SERVICE_URL=$REACT_APP_RECIPE_SERVICE_URL
-ENV REACT_APP_RATING_SERVICE_URL=$REACT_APP_RATING_SERVICE_URL
+# ENV REACT_APP_API_URL=$REACT_APP_API_URL
+# ENV REACT_APP_RECIPE_SERVICE_URL=$REACT_APP_RECIPE_SERVICE_URL
+# ENV REACT_APP_RATING_SERVICE_URL=$REACT_APP_RATING_SERVICE_URL
 
-RUN npm run build
-RUN npm install -g serve
+# RUN npm run build
+# RUN npm install -g serve
 
-EXPOSE 80
-CMD ["serve", "-s", "build", "-l", "80"]
+# EXPOSE 80
+# CMD ["serve", "-s", "build", "-l", "80"]
 #++++++++++++++++++++++++++++++++++++++++
 
 # FROM node:18-alpine
