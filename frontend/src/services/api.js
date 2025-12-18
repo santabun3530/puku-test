@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8001";
-const RECIPE_BASE_URL = process.env.REACT_APP_RECIPE_SERVICE_URL || "http://localhost:8002";
-const RATING_BASE_URL = process.env.REACT_APP_RATING_SERVICE_URL || "http://localhost:8003";
+// Ingress routing
+const API_BASE_URL = process.env.REACT_APP_API_URL || "/api/users";
+const RECIPE_BASE_URL = process.env.REACT_APP_RECIPE_SERVICE_URL || "/api/recipes";
+const RATING_BASE_URL = process.env.REACT_APP_RATING_SERVICE_URL || "/api/ratings";
+
 
 // User/Auth API
 const api = axios.create({
@@ -96,6 +98,8 @@ export const ratingService = {
     return res.data;
   }
 };
+
+
 
 
 

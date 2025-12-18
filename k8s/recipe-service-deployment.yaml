@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recipe-service
+  namespace: puku-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recipe-service
+  template:
+    metadata:
+      labels:
+        app: recipe-service
+    spec:
+      containers:
+      - name: recipe-service
+        image: satabun3530/puku-app-recipe:latest
+        ports:
+        - containerPort: 8002
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: puku-config
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: puku-secrets
+              key: SECRET_KEY
+        - name: ALGORITHM
+          valueFrom:
+            configMapKeyRef:
+              name: puku-config
+              key: ALGORITHM
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: puku-config
+              key: USER_SERVICE_URL
+        - name: RECIPE_SERVICE_HOST
+          value: "0.0.0.0"
+        - name: RECIPE_SERVICE_PORT
+          value: "8002"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

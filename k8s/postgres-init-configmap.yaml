@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: puku-app
+data:
+  init.sql: |
+    -- Create users table
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        hashed_password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create recipes table
+    CREATE TABLE IF NOT EXISTS recipes (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        description TEXT,
+        ingredients TEXT NOT NULL,
+        instructions TEXT NOT NULL,
+        prep_time INTEGER,
+        cook_time INTEGER,
+        servings INTEGER,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create ratings table
+    CREATE TABLE IF NOT EXISTS ratings (
+        id SERIAL PRIMARY KEY,
+        recipe_id INTEGER REFERENCES recipes(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(recipe_id, user_id)
+    );
+    -- Insert sample data (optional)
+    INSERT INTO users (username, email, hashed_password) VALUES 
+    ('admin', 'admin@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6hsxq9w5KS'),
+    ('chef', 'chef@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6hsxq9w5KS');
+
+    INSERT INTO recipes (title, description, ingredients, instructions, cooking_time, user_id) VALUES 
+    ('Spaghetti Carbonara', 'Classic Italian pasta dish', 'Pasta, Eggs, Bacon, Parmesan, Black Pepper', '1. Cook pasta 2. Fry bacon 3. Mix eggs and cheese 4. Combine all ingredients', 20, 1),
+    ('Chicken Curry', 'Spicy Indian curry', 'Chicken, Onions, Garlic, Ginger, Curry Powder, Coconut Milk', '1. Marinate chicken 2. Sauté onions 3. Add spices 4. Simmer with coconut milk', 45, 2);
+
+    INSERT INTO ratings (rating, comment, user_id, recipe_id) VALUES 
+    (5, 'Amazing recipe! Very authentic.', 2, 1),
+    (4, 'Good but needs more spice.', 1, 2);
