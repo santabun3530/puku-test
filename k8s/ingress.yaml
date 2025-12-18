@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: puku-app.local  # Change to your domain
+  - host: pukuapp.local  # Change to your domain
     http:
       paths:
       - path: /
