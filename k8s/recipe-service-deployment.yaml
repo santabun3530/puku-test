@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: recipe-service
+  name: recipe-service-deployment
   namespace: puku-app
 spec:
   replicas: 1

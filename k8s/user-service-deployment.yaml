@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: user-service
+  name: user-service-deployment
   namespace: puku-app
 spec:
   replicas: 2

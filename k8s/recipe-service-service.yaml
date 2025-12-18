@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: recipe-service
   namespace: puku-app
+  labels:
+    app: recipe-service
 spec:
   selector:
     app: recipe-service
   ports:
   - port: 8002
     targetPort: 8002
+    protocol: TCP
   type: ClusterIP

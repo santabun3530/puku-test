@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rating-service
+  name: rating-service-deployment
   namespace: puku-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: rating-service
