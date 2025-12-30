@@ -34,6 +34,10 @@ sudo vim /etc/postgresql/*/main/pg_hba.conf
 
 host    all             all             hostIP/32      md5
 ```
+After two file changes then we have to used this command. 
+```
+sudo systemctl restart postgresql@*-main.service
+```
 ### Create table 
 1. Go to database directory.
 2. Then table create with command
