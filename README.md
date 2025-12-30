@@ -46,5 +46,11 @@ psql -h 192.168.121.195 -U admin -d recipe_db -f init.sql
 
 \dt
 ```
+# OS dependencies 
+```
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip nginx nodejs npm
+```
 
+## Now create .env.linux 
 
