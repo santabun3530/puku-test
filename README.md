@@ -53,4 +53,130 @@ sudo apt install -y python3 python3-venv python3-pip nginx nodejs npm
 ```
 
 ## Now create .env.linux 
+```
+# Database Configuration
+POSTGRES_DB=recipe_db
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=192.168.121.195
+POSTGRES_PORT=5432
+
+# Service URLs (for inter-service communication)
+USER_SERVICE_URL=http://192.168.121.195:8001
+RECIPE_SERVICE_URL=http://192.168.121.195:8002
+RATING_SERVICE_URL=http://192.168.121.195:8003
+
+# Database URL
+DATABASE_URL=postgresql://admin:password@192.168.121.195:5432/recipe_db
+```
+# Service deploy 
+
+## User service
+```
+cd user-service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+```
+### Now set up for background process with systemd
+Create a file user.service
+```
+sudo vim /etc/systemd/system/user.service
+```
+Now set up configuration 
+```
+[Unit]
+Description=User Service
+After=network.target postgresql.service
+
+[Service]
+User=vagrant
+WorkingDirectory=/home/vagrant/recipe-app-linux/puku-app/user-service
+EnvironmentFile=/home/vagrant/recipe-app-linux/puku-app/.env.linux
+ExecStart=/home/vagrant/recipe-app-linux/puku-app/user-service/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+After that enable that service
+```
+sudo systemctl enable user.service
+sudo systemctl restart user.service
+sudo systemctl status user.service
+```
+
+## Recipe service
+```
+cd recipe-service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+```
+### Now set up for background process with systemd
+Create a file recipe.service
+```
+sudo vim /etc/systemd/system/recipe.service
+```
+Now set up configure file
+```
+[Unit]
+Description=Recipe Service
+After=network.target postgresql.service
+
+[Service]
+User=vagrant
+WorkingDirectory=/home/vagrant/recipe-app-linux/puku-app/recipe-service
+EnvironmentFile=/home/vagrant/recipe-app-linux/puku-app/.env.linux
+ExecStart=/home/vagrant/recipe-app-linux/puku-app/recipe-service/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8002
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+After that enable that service
+```
+sudo systemctl enable recipe.service
+sudo systemctl restart recipe.service
+sudo systemctl status recipe.service
+```
+
+## Rating service
+```
+cd rating-service
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+```
+### Now set up for background process with systemd
+Create a file rating.service
+```
+sudo vim /etc/systemd/system/rating.service
+```
+Now set up configure file
+```
+[Unit]
+Description=Rating Service
+After=network.target postgresql.service
+
+[Service]
+User=vagrant
+WorkingDirectory=/home/vagrant/recipe-app-linux/puku-app/rating-service
+EnvironmentFile=/home/vagrant/recipe-app-linux/puku-app/.env.linux
+ExecStart=/home/vagrant/recipe-app-linux/puku-app/rating-service/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8003
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+After that enable that service
+```
+sudo systemctl enable rating.service
+sudo systemctl restart rating.service
+sudo systemctl status rating.service
+```
 
