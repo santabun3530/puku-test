@@ -179,4 +179,57 @@ sudo systemctl enable rating.service
 sudo systemctl restart rating.service
 sudo systemctl status rating.service
 ```
+## Frontend Service
+```
+cd frontend
+npm install
+npm run build
+sudo cp -r build/* /var/www/frontend/
 
+```
+### Set up nginx as LB 
+```
+sudo vim /etc/nginx/sites-available/recipe-app.conf
+```
+Configuration file 
+```
+server{
+listen 80;    
+server_name _;
+
+    # Frontend (React)
+    root /var/www/frontend;
+    index index.html;
+
+    location / {
+        try_files $uri /index.html;
+    }
+
+    # User service
+    location /api/users/ {
+        proxy_pass http://192.168.121.195:8001/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Recipe service
+    location /api/recipes/ {
+        proxy_pass http://192.168.121.195:8002/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Rating service
+    location /api/ratings/ {
+        proxy_pass http://192.168.121.195:8003/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+### After nginx configuration we need to restart nginx
+```
+sudo ln -s /etc/nginx/sites-available/recipe-app.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
